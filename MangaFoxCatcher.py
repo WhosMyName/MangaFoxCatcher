@@ -100,7 +100,7 @@ def init_preps():
     if len(volumelist) == 1:
         if not os.path.exists(volumelist[0][2]):
                     os.mkdir(volumelist[0][2])
-        retrieve_chapter(volumelist[0][1], volumelist[0][2], CURRTHREADS)
+        retrieve_volume(volumelist[0][1], volumelist[0][2], CURRTHREADS)
         return
     else:
         volumelist.reverse()
@@ -114,14 +114,15 @@ def init_preps():
                 CURRTHREADS.value = CURRTHREADS.value + 1
                 print("Chapterlist:", volume[1])
                 print("Voldir:", voldir)
-                worker = multiprocessing.Process(target=retrieve_chapter, args=(volume[1], voldir, CURRTHREADS), daemon=False)
+                worker = multiprocessing.Process(target=retrieve_volume, args=(volume[1], voldir, CURRTHREADS), daemon=False)
                 worker.start()
                 time.sleep(5)
                 while CURRTHREADS.value == LIMIT:
                     time.sleep(1)
     return
 
-def retrieve_chapter(chapterlist, voldir, CURRTHREADS):
+def retrieve_volume(chapterlist, voldir, CURRTHREADS):
+    """ Function to download Volumes"""
     print("Yo, Process Nr.", CURRTHREADS.value, "here")
     imglist = []
     chapterlist.reverse()
@@ -138,35 +139,37 @@ def retrieve_chapter(chapterlist, voldir, CURRTHREADS):
                     options = line.split(" >")
                     for option in options:
                         option = option.split("</")[0]
-                        if not "Comments" in option and not "selected" in option:
+                        if not "Comments" in option and not "selected" in option and not "option" in option:
                             option = int(option)
                             if option > maxpages:
                                 maxpages = option
-        
+        autocleanse(chapterfile)
         srcurl = chapter[0].split("1.html")[0]
-        for x in range(1, maxpages):
-            time.sleep(1)
+        for x in range(1, maxpages + 1):
             pageurl = srcurl + str(x) + ".html"
             pagefile = chapterdir + str(x) + ".html"
-            get_file(pagefile, pageurl)
-            imgbool = False
-            with open(pagefile, "r") as pgf:
-                for line in pgf:
-                    if "read_img" in line:
-                        imgbool = True
-                    if "<img src=\"" in line and "id=\"image\" alt=\"" in line and imgbool:
-                        imgurl = line.split("\"")[1]
-                        print(imgurl)
-                        imgfile = chapterdir + "Page " + str(x) + ".jpg"
-                        get_file(imgfile, imgurl)
-
-            autocleanse(pagefile)
+            getter = threading.Thread(target=retrieve_chapter, args=(str(pageurl), str(pagefile), str(chapterdir), str(x)), daemon=True)
+            getter.start()
+            time.sleep(2)
             pageurl = ""
             pagefile = ""
-        autocleanse(chapterfile)
+    CURRTHREADS.value = CURRTHREADS.value - 1
     return
 
-
+def retrieve_chapter(pageurl, pagefile, chapterdir, itera):
+    """ Function to Download all images of a Chapter """
+    get_file(pagefile, pageurl)
+    imgbool = False
+    with open(pagefile, "r") as pgf:
+        for line in pgf:
+            if "read_img" in line:
+                imgbool = True
+            if "<img src=\"" in line and "id=\"image\" alt=\"" in line and imgbool:
+                imgurl = line.split("\"")[1]
+                print(imgurl)
+                imgfile = chapterdir + "Page " + str(itera) + ".jpg"
+                get_file(imgfile, imgurl)
+    autocleanse(pagefile)
 
 def main():
     """MAIN"""
