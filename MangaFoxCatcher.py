@@ -2,16 +2,11 @@
 
 import os
 import subprocess
-import multiprocessing
-import threading
-import tempfile
 import time
 import requests
 
 #SEARCH FOR # TO FIND ALL COMMENTS
 
-CURRTHREADS = multiprocessing.Value("i", 0)
-LIMIT = 5
 HEADERS = requests.utils.default_headers()
 HEADERS.update({"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36",})
 
@@ -22,14 +17,14 @@ else:
 
 def get_file(srcfile, srcurl, counter=0, ftype=0):#ftype indicates if picture or not
     """Function to Downloadad and verify downloaded Files"""
-    time.sleep(5)
+    time.sleep(1)
+    counter = counter + 1
     if not os.path.isfile(srcfile):
         print("Downloading", srcurl, "as", srcfile)
-        counter = counter + 1
         with open(srcfile, "wb") as fifo:#open in binary write mode
             response = requests.get(srcurl, headers=HEADERS)#get request
             fifo.write(response.content)#write to file
-        if int(str(os.path.getsize(srcfile)).strip("L")) < 1000000 and ftype: #Assumes Error in Download and redownlads File
+        if int(str(os.path.getsize(srcfile)).strip("L")) < 100000 and ftype: #Assumes Error in Download and redownlads File
             print("Redownloading", srcurl, "as", srcfile)
             autocleanse(srcfile)
             return get_file(srcfile, srcurl, counter)
@@ -99,9 +94,8 @@ def init_preps():
     autocleanse(indexfile)
     if len(volumelist) == 1:
         if not os.path.exists(volumelist[0][2]):
-                    os.mkdir(volumelist[0][2])
-        retrieve_volume(volumelist[0][1], volumelist[0][2], CURRTHREADS)
-        return
+            os.mkdir(volumelist[0][2])
+        retrieve_chapter(volumelist[0][1], volumelist[0][2])
     else:
         volumelist.reverse()
         for volume in volumelist:
@@ -111,19 +105,13 @@ def init_preps():
                 voldir = mangadir + "Volume " + str(volume[0]) + SLASH
                 if not os.path.exists(voldir):
                     os.mkdir(voldir)
-                CURRTHREADS.value = CURRTHREADS.value + 1
                 print("Chapterlist:", volume[1])
                 print("Voldir:", voldir)
-                worker = multiprocessing.Process(target=retrieve_volume, args=(volume[1], voldir, CURRTHREADS), daemon=False)
-                worker.start()
-                time.sleep(5)
-                while CURRTHREADS.value == LIMIT:
-                    time.sleep(1)
-    return
+                retrieve_chapter(volume[1], voldir)
+    exit(0)
 
-def retrieve_volume(chapterlist, voldir, CURRTHREADS):
+def retrieve_chapter(chapterlist, voldir):
     """ Function to download Volumes"""
-    print("Yo, Process Nr.", CURRTHREADS.value, "here")
     imglist = []
     chapterlist.reverse()
     for chapter in chapterlist:
@@ -143,21 +131,24 @@ def retrieve_volume(chapterlist, voldir, CURRTHREADS):
                             option = int(option)
                             if option > maxpages:
                                 maxpages = option
+        print("Maxpages:", maxpages)
         autocleanse(chapterfile)
         srcurl = chapter[0].split("1.html")[0]
         for x in range(1, maxpages + 1):
-            pageurl = srcurl + str(x) + ".html"
-            pagefile = chapterdir + str(x) + ".html"
-            getter = threading.Thread(target=retrieve_chapter, args=(str(pageurl), str(pagefile), str(chapterdir), str(x)), daemon=True)
-            getter.start()
-            time.sleep(2)
-            pageurl = ""
-            pagefile = ""
-    CURRTHREADS.value = CURRTHREADS.value - 1
-    return
+            retval = -1
+            print("Trying to download page", x)
+            while retval != 0:
+                pageurl = srcurl + str(x) + ".html"
+                pagefile = chapterdir + str(x) + ".html"
+                retval = retrieve_page(pageurl, pagefile, chapterdir, str(x))
+                print("retval for page", x, "is:", retval)
+                pageurl = ""
+                pagefile = ""
+    return 0
 
-def retrieve_chapter(pageurl, pagefile, chapterdir, itera):
+def retrieve_page(pageurl, pagefile, chapterdir, itera):
     """ Function to Download all images of a Chapter """
+    retval = -1
     get_file(pagefile, pageurl)
     imgbool = False
     with open(pagefile, "r") as pgf:
@@ -168,8 +159,13 @@ def retrieve_chapter(pageurl, pagefile, chapterdir, itera):
                 imgurl = line.split("\"")[1]
                 print(imgurl)
                 imgfile = chapterdir + "Page " + str(itera) + ".jpg"
-                get_file(imgfile, imgurl)
-    autocleanse(pagefile)
+                retval = get_file(imgfile, imgurl, 0, 1)
+    if retval == 0: 
+        autocleanse(pagefile)
+        return 0
+    else:
+        autocleanse(pagefile)
+        return 1
 
 def main():
     """MAIN"""
