@@ -1,7 +1,6 @@
 """Script to Download Mangas from MangaFox"""
 
 import os
-import subprocess
 import time
 import requests
 
@@ -18,24 +17,29 @@ else:
 def get_file(srcfile, srcurl, counter=0, ftype=0):#ftype indicates if picture or not
     """Function to Downloadad and verify downloaded Files"""
     time.sleep(1)
+    if counter == 5:
+        print("Could not download File:", srcfile, "in 5 attempts")
+        return 1
     counter = counter + 1
     if not os.path.isfile(srcfile):
         print("Downloading", srcurl, "as", srcfile)
         with open(srcfile, "wb") as fifo:#open in binary write mode
             response = requests.get(srcurl, headers=HEADERS)#get request
+            print("\n\n\n", response.headers,"\n\n\n") # check against actual filesize
             fifo.write(response.content)#write to file
-        if int(str(os.path.getsize(srcfile)).strip("L")) < 100000 and ftype: #Assumes Error in Download and redownlads File
+        if int(str(os.path.getsize(srcfile)).strip("L")) < 10000 and ftype: #Assumes Error in Download and redownlads File
             print("Redownloading", srcurl, "as", srcfile)
             autocleanse(srcfile)
             return get_file(srcfile, srcurl, counter)
         else: #Assume correct Filedownload
             return 0
     else:
-        if int(str(os.path.getsize(srcfile)).strip("L")) < 1000000 and ftype: #Assumes Error in Download and redownlads File
+        if int(str(os.path.getsize(srcfile)).strip("L")) < 10000 and ftype: #Assumes Error in Download and redownlads File
             print(srcfile, "was already downloaded but the filesize does not seem to fit -> Redownl0ading")
             autocleanse(srcfile)
             return get_file(srcfile, srcurl, 0)
         else: #Assume correct Filedownload
+            print("File was downloaded correctly on a previous run")
             return 0
 
 def autocleanse(cleansefile):
@@ -53,12 +57,12 @@ def init_preps():
     os.chdir(cwd)
     print("Recommended URL-Format would be: http://mangafox.me/manga/the_gentleman_s_armchair/\n")
     inputurl = str(input("Please enter the URL of the Manga you want to download: "))
-    #inputurl = "http://mangafox.me/manga/the_gentleman_s_armchair/"
-    firstvolume = int(float(input("Please enter the Number of the first Volume you want: ") or "1"))
-    lastvolume = int(float(input("Please enter the Number of the last Volume you want: ") or "1"))
+    #inputurl = "http://mangafox.me/manga/the_gentleman_s_armchair/"#cm
+    firstvolume = int(float(input("Please enter the Number of the first Volume you want: ") or 1))
+    lastvolume = int(float(input("Please enter the Number of the last Volume you want: ") or 1))
 
     indexfile = cwd + "indexfile.html"
-    manganame = inputurl.split("/")[4].replace("_s_", "s_").replace("_", " ").title()
+    manganame = inputurl.split("/")[4].replace("_s_", "s_").replace("_", " ").replace(":", " -").title()
     mangadir = cwd + manganame + SLASH
     chapterlist = []
     volumelist = [] 
@@ -74,7 +78,7 @@ def init_preps():
                 print("Found a Volume")
                 volume = str(line.split("<h3 class=\"volume\">Volume")[1].split("<span>")[0].replace(" 0", " ").replace(" ", ""))
                 involume = True
-                print(volume)
+                print("Volume:", volume)#???103
                 voldir = mangadir + volume + SLASH
                 print("Created Volumefolder")
             if "<a href=" in line and "title=" in line and involume:
@@ -123,6 +127,7 @@ def retrieve_chapter(chapterlist, voldir):
         maxpages = 0
         with open(chapterfile, "r") as chap:
             for line in chap:
+                line = str(line)
                 if "<option value=\"" in line:
                     options = line.split(" >")
                     for option in options:
@@ -132,18 +137,15 @@ def retrieve_chapter(chapterlist, voldir):
                             if option > maxpages:
                                 maxpages = option
         print("Maxpages:", maxpages)
-        autocleanse(chapterfile)
+        #autocleanse(chapterfile)#ucm
         srcurl = chapter[0].split("1.html")[0]
         for x in range(1, maxpages + 1):
-            retval = -1
-            print("Trying to download page", x)
-            while retval != 0:
-                pageurl = srcurl + str(x) + ".html"
-                pagefile = chapterdir + str(x) + ".html"
-                retval = retrieve_page(pageurl, pagefile, chapterdir, str(x))
-                print("retval for page", x, "is:", retval)
-                pageurl = ""
-                pagefile = ""
+            pageurl = srcurl + str(x) + ".html"
+            pagefile = chapterdir + str(x) + ".html"
+            retval = retrieve_page(pageurl, pagefile, chapterdir, str(x))
+            print("retval for page", x, "is:", retval)
+            pageurl = ""
+            pagefile = ""
     return 0
 
 def retrieve_page(pageurl, pagefile, chapterdir, itera):
@@ -160,12 +162,8 @@ def retrieve_page(pageurl, pagefile, chapterdir, itera):
                 print(imgurl)
                 imgfile = chapterdir + "Page " + str(itera) + ".jpg"
                 retval = get_file(imgfile, imgurl, 0, 1)
-    if retval == 0: 
-        autocleanse(pagefile)
-        return 0
-    else:
-        autocleanse(pagefile)
-        return 1
+    autocleanse(pagefile)
+    return retval
 
 def main():
     """MAIN"""
