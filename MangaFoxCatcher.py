@@ -21,7 +21,7 @@ def get_file(srcfile, srcurl, counter=0, ftype=0):#ftype indicates if picture or
         return 1
     counter = counter + 1
     if not os.path.isfile(srcfile):
-        time.sleep(3)
+        time.sleep(5)
         print("Downloading", srcurl, "as", srcfile)
         with open(srcfile, "wb") as fifo:#open in binary write mode
             response = requests.get(srcurl, headers=HEADERS)#get request
@@ -55,9 +55,9 @@ def init_preps():
     """Function to initiate the Download Process"""
     cwd = os.path.dirname(os.path.realpath(__file__)) + SLASH
     os.chdir(cwd)
-    print("Recommended URL-Format would be: http://mangafox.me/manga/the_gentleman_s_armchair/\n")
+    print("Recommended URL-Format would be: http://fanfox.net//manga/the_gentleman_s_armchair/\n")
     inputurl = str(input("Please enter the URL of the Manga you want to download: "))
-    #inputurl = "http://mangafox.me/manga/the_gentleman_s_armchair/"#cm
+    #inputurl = "http://fanfox.net/manga/the_gentleman_s_armchair/"#cm
     firstvolume = int(float(input("Please enter the Number of the first Volume you want: ") or 1))
     lastvolume = int(float(input("Please enter the Number of the last Volume you want: ") or 1))
 
@@ -85,7 +85,7 @@ def init_preps():
                 print("Found a Chapter")
                 chapternum = line.split("class=\"tips\">")[1].split("</a>")[0]
                 chapternum = chapternum.split(" ")[len(chapternum.split(" ")) - 1]
-                chapterlink = line.split("<a href=\"")[1].split("\"")[0]
+                chapterlink = line.split("<a href=\"")[1].split("\"")[0].replace("//", "http://")
                 print(chapterlink)
                 chapterlist.append([chapterlink, chapternum])
                 print("It was Chapter", chapternum)
