@@ -3,6 +3,7 @@
 import os
 import time
 import requests
+from cbzarchiver import makecbz
 
 #SEARCH FOR # TO FIND ALL COMMENTS
 
@@ -21,11 +22,11 @@ def get_file(srcfile, srcurl, counter=0, ftype=0):#ftype indicates if picture or
         return 1
     counter = counter + 1
     if not os.path.isfile(srcfile):
-        time.sleep(5)
+        time.sleep(2) # why wait 5 secs? because it'll make you "look" like neither a bot/script nor like a reading human 
         print("Downloading", srcurl, "as", srcfile)
         with open(srcfile, "wb") as fifo:#open in binary write mode
             response = requests.get(srcurl, headers=HEADERS)#get request
-            print("\n\n\n", response.headers,"\n\n\n") # check against actual filesize
+            #print("\n\n\n", response.headers,"\n\n\n") # check against actual filesize
             fifo.write(response.content)#write to file
         if int(str(os.path.getsize(srcfile)).strip("L")) < 10000 and ftype: #Assumes Error in Download and redownlads File
             print("Redownloading", srcurl, "as", srcfile)
@@ -56,8 +57,8 @@ def init_preps():
     cwd = os.path.dirname(os.path.realpath(__file__)) + SLASH
     os.chdir(cwd)
     print("Recommended URL-Format would be: http://fanfox.net//manga/the_gentleman_s_armchair/\n")
-    inputurl = str(input("Please enter the URL of the Manga you want to download: "))
-    #inputurl = "http://fanfox.net/manga/the_gentleman_s_armchair/"#cm
+    #inputurl = str(input("Please enter the URL of the Manga you want to download: "))
+    inputurl = "http://fanfox.net/manga/the_gentleman_s_armchair/"#cm
     firstvolume = int(float(input("Please enter the Number of the first Volume you want: ") or 1))
     lastvolume = int(float(input("Please enter the Number of the last Volume you want: ") or 1))
 
@@ -79,7 +80,8 @@ def init_preps():
                 volume = str(line.split("<h3 class=\"volume\">Volume")[1].split("<span>")[0].replace(" 0", " ").replace(" ", ""))
                 involume = True
                 print("Volume:", volume)#???103
-                voldir = mangadir + volume + SLASH
+                voldir = mangadir + "Volume " + volume + SLASH
+                #voldir = mangadir + volume + SLASH
                 print("Created Volumefolder")
             if "<a href=" in line and "title=" in line and involume:
                 print("Found a Chapter")
@@ -100,18 +102,20 @@ def init_preps():
         if not os.path.exists(volumelist[0][2]):
             os.mkdir(volumelist[0][2])
         retrieve_chapter(volumelist[0][1], volumelist[0][2])
+        makecbz(volumelist[0][2])
     else:
         volumelist.reverse()
         for volume in volumelist:
             volume[0] = int(volume[0])
             print(volume[0])
             if volume[0] >= firstvolume and volume[0] <= lastvolume:
-                voldir = mangadir + "Volume " + str(volume[0]) + SLASH
-                if not os.path.exists(voldir):
-                    os.mkdir(voldir)
+                #voldir = mangadir + "Volume " + str(volume[0]) + SLASH
+                if not os.path.exists(volume[2]):
+                    os.mkdir(volume[2])
                 print("Chapterlist:", volume[1])
                 print("Voldir:", voldir)
                 retrieve_chapter(volume[1], voldir)
+                makecbz(volume[2])
     exit(0)
 
 def retrieve_chapter(chapterlist, voldir):
@@ -129,7 +133,7 @@ def retrieve_chapter(chapterlist, voldir):
             for line in chap:
                 line = str(line)
                 if "<option value=\"" in line:
-                    options = line.split(" >")
+                    options = line.split("\">")
                     for option in options:
                         option = option.split("</")[0]
                         if not "Comments" in option and not "selected" in option and not "option" in option:
@@ -137,7 +141,7 @@ def retrieve_chapter(chapterlist, voldir):
                             if option > maxpages:
                                 maxpages = option
         print("Maxpages:", maxpages)
-        #autocleanse(chapterfile)#ucm
+        #autocleanse(chapterfile) # uncomment
         srcurl = chapter[0].split("1.html")[0]
         for x in range(1, maxpages + 1):
             pageurl = srcurl + str(x) + ".html"
@@ -170,3 +174,18 @@ def main():
     os.umask(0)
     init_preps()
 main()
+
+###########################################################
+# *Documentation*
+#Volumelist Structure:
+#Type: List of Lists
+#each entry is a "Volume" that contains
+#volumelist[0][0]: Volume's Name (ex.: Volume 6)
+#volumelist[0][1]: List of Chapter in Volume
+#volumelist[0][2]: Directory that the Volume will be saved in
+#
+#Chapterlist Structure:
+#Type: List of Lists
+#chapterlist[0][0]: Link of Chapter
+#chapterlist[0][0]: Chapter's Number (ex.: Chapter 98)
+###########################################################
