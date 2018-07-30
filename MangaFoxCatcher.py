@@ -57,8 +57,8 @@ def init_preps():
     cwd = os.path.dirname(os.path.realpath(__file__)) + SLASH
     os.chdir(cwd)
     print("Recommended URL-Format would be: http://fanfox.net//manga/the_gentleman_s_armchair/\n")
-    #inputurl = str(input("Please enter the URL of the Manga you want to download: "))
-    inputurl = "http://fanfox.net/manga/the_gentleman_s_armchair/"#cm
+    inputurl = str(input("Please enter the URL of the Manga you want to download: "))
+    #inputurl = "http://fanfox.net/manga/the_gentleman_s_armchair/"#cm
     firstvolume = int(float(input("Please enter the Number of the first Volume you want: ") or 1))
     lastvolume = int(float(input("Please enter the Number of the last Volume you want: ") or 1))
 
