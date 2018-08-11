@@ -120,7 +120,6 @@ def init_preps():
 
 def retrieve_chapter(chapterlist, voldir):
     """ Function to download Volumes"""
-    imglist = []
     chapterlist.reverse()
     for chapter in chapterlist:
         chapterdir = voldir + "Chapter " + str(chapter[1]) + SLASH
