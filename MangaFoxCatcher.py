@@ -22,7 +22,7 @@ def get_file(srcfile, srcurl, counter=0, ftype=0):#ftype indicates if picture or
         return 1
     counter = counter + 1
     if not os.path.isfile(srcfile):
-        time.sleep(2) # why wait 5 secs? because it'll make you "look" like neither a bot/script nor like a reading human 
+        time.sleep(5) # why wait 5 secs? because it'll make you "look" like neither a bot/script nor like a reading human 
         print("Downloading", srcurl, "as", srcfile)
         with open(srcfile, "wb") as fifo:#open in binary write mode
             response = requests.get(srcurl, headers=HEADERS)#get request

@@ -42,10 +42,3 @@ Either open Directory in CMD and execute python MangaFoxCatcher.py or double-cli
 * It will quit automatically or you can, if you want stop it midway using *Ctrl + C*
 
 >**Note:** *I added time.sleep(5) to prevent the Script from triggering the Chaptcha Mechanism/Bot Detection.*  
-
->**Note:** *Additionally I might have added a Download-Limit of 5 to prevent the Script from downloading all Volumes in parallel.  
-This Feature can be disabled by changing the Value of LIMIT to some Value fitting for your use.*
-
-```python
-LIMIT = 5 #<-------------- YourValueHere
-```
